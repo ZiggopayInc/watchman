@@ -83,6 +83,7 @@ func shell(ctx context.Context, env Environment) fyne.CanvasObject {
 	tabs := container.NewAppTabs(
 		container.NewTabItemWithIcon("Search", theme.SearchIcon(), SearchContainer(ctx, env)),
 		container.NewTabItemWithIcon("Lists", theme.ListIcon(), AdminContainer(ctx, env)),
+		container.NewTabItemWithIcon("Account", theme.AccountIcon(), AccountContainer(ctx)),
 	)
 	tabs.SetTabLocation(container.TabLocationTop)
 

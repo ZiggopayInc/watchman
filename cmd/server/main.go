@@ -19,6 +19,7 @@ import (
 	"github.com/moov-io/base/log"
 	"github.com/moov-io/base/telemetry"
 	"github.com/moov-io/watchman"
+	"github.com/moov-io/watchman/internal/account"
 	"github.com/moov-io/watchman/internal/config"
 	"github.com/moov-io/watchman/internal/db"
 	"github.com/moov-io/watchman/internal/deepparse"
@@ -173,6 +174,9 @@ func main() {
 
 	ingestController := ingest.NewController(logger, ingestService, conf.Ingest, indexedLists)
 	ingestController.AppendRoutes(router)
+
+	// Signed-in users change their own password (see internal/account)
+	account.NewPasswordController(logger).AppendRoutes(router)
 
 	// Add the Webui last
 	webuiController := webui.NewController(logger, conf.Webui)

@@ -5,6 +5,7 @@ import (
 	"context"
 	"image/color"
 	"slices"
+	"time"
 
 	"github.com/moov-io/watchman/pkg/search"
 
@@ -126,6 +127,57 @@ func AdminContainer(ctx context.Context, env Environment) fyne.CanvasObject {
 	}
 
 	refreshBtn = widget.NewButtonWithIcon("Refresh", theme.ViewRefreshIcon(), load)
+
+	// Reload asks the server to download and index the lists again from their sources, then waits for it to finish.
+	var reloadBtn *widget.Button
+	reload := func() {
+		reloadBtn.Disable()
+		refreshBtn.Disable()
+		status.Importance = widget.LowImportance
+		status.SetText("Reloading lists from their sources. This takes a few minutes.")
+		status.Show()
+
+		go func() {
+			enableButtons := func() {
+				reloadBtn.Enable()
+				refreshBtn.Enable()
+			}
+			if _, err := env.Client.DataRefresh(ctx); err != nil {
+				fyne.Do(func() {
+					enableButtons()
+					status.Importance = widget.DangerImportance
+					status.SetText("Reload failed to start: " + err.Error())
+					status.Show()
+				})
+				return
+			}
+
+			// poll until the server reports the reload has finished, for at most ten minutes
+			deadline := time.Now().Add(10 * time.Minute)
+			for time.Now().Before(deadline) {
+				time.Sleep(5 * time.Second)
+				st, err := env.Client.RefreshStatus(ctx)
+				if err != nil || st.State == "running" {
+					continue
+				}
+				if st.State == "failed" {
+					fyne.Do(func() {
+						enableButtons()
+						status.Importance = widget.DangerImportance
+						status.SetText("Reload failed: " + st.LastError)
+						status.Show()
+					})
+					return
+				}
+				break
+			}
+			fyne.Do(func() {
+				enableButtons()
+				load()
+			})
+		}()
+	}
+	reloadBtn = widget.NewButtonWithIcon("Reload lists", theme.DownloadIcon(), reload)
 	table.Hide()
 	load()
 
@@ -140,7 +192,7 @@ func AdminContainer(ctx context.Context, env Environment) fyne.CanvasObject {
 	)
 
 	header := container.NewVBox(
-		container.NewBorder(nil, nil, sectionLabel("Loaded lists"), refreshBtn),
+		container.NewBorder(nil, nil, sectionLabel("Loaded lists"), container.NewHBox(reloadBtn, refreshBtn)),
 		stats,
 		status,
 		statGap(),

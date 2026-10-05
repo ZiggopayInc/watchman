@@ -19,7 +19,7 @@ import (
 var (
 	flagBaseAddress = &cli.StringFlag{
 		Name:  "address",
-		Value: cmp.Or(os.Getenv("WATCHMAN_ADDRESS"), "http://localhost:8084"),
+		Value: cmp.Or(os.Getenv("WATCHMAN_ADDRESS"), "https://dev-watchman.ziggopay.io"),
 		Usage: "Address to connect with Watchman",
 	}
 	flagVerbose = &cli.BoolFlag{

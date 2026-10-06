@@ -38,6 +38,8 @@ WORKDIR /src
 # Browser UI (ui.wasm) is embedded into the server, so it is built first. The UI's default API address
 # is changed to https://dev-watchman.ziggopay.io in cmd/ui/main.go (ZiggoPay change).
 RUN go install fyne.io/tools/cmd/fyne@latest && APP_VERSION=${VERSION} make build-webui
+# Fail the image build if the browser app is not embedded: otherwise the server runs with an empty UI.
+RUN test -f /src/cmd/ui/wasm/ui.wasm && test -f /src/cmd/ui/wasm/index.html
 
 ENV PKG_CONFIG_PATH=/src/libpostal/
 RUN VERSION=${VERSION} GOTAGS="-tags libpostal" make build-server postal-server
